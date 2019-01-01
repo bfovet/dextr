@@ -91,21 +91,21 @@ int main(int argc, char **argv) {
 
     // Run tasks : launch command
     for (auto &task : received_tasks) {
-        mpi::timer *time = new mpi::timer();
+        mpi::timer timer;
         int status = system(task.c_str());
-        int elapsed = time->elapsed();
+        int elapsed_time = timer.elapsed();
 
         if (WIFEXITED(status)) {
             status = WEXITSTATUS(status);
             cout << "#executed by process " << world.rank()
-                 << " in " << elapsed << " s"
+                 << " in " << elapsed_time << " s"
                  << " with status " << status
                  << " : " << task << "\n";
         } else {
             if (WIFSIGNALED(status)) {
                 status = WTERMSIG(status);
                 cout << "#executed by process " << world.rank()
-                     << " in " << elapsed << " s"
+                     << " in " << elapsed_time << " s"
                      << " killed by signal " << status
                      << " : " << task << "\n";
             }
