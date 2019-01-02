@@ -8,45 +8,69 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/program_options.hpp>
 
+#include "launch.h"
+#include "version.h"
+
 using namespace std;
 
 namespace mpi = boost::mpi;
 namespace po = boost::program_options;
 
 
-int main(int argc, char **argv) {
+void print_global_help(po::options_description options)
+{
+    cout << "Usage: " << "\n";
+    cout << "  dextr [options] <command>" << "\n";
+    cout << "Commands:" << "\n";
+    cout << "  launch   execute tasks from taskfile" << "\n";
+    cout << "  filter   filter tasks logs from logfile" << "\n";
+    cout << options;
+}
 
-    std::string taskfile;
 
+int main(int argc, char **argv)
+{
+    // Parse commands and global options
     po::options_description options("Options");
     options.add_options()
             ("version,v", "print version string")
             ("help,h", "show this help message");
 
+    if (argc == 1) {
+        print_global_help(options);
+        return 1;
+    }
+
     po::options_description args("Arguments");
     args.add_options()
-            ("taskfile", po::value<string>(&taskfile)->required(), "tasks file");
+            ("command", po::value<string>(), "command")
+            ("subargs", po::value<vector<string> >(), "arguments for command");
 
     po::options_description desc;
     desc.add(args).add(options);
 
-    po::positional_options_description p;
-    p.add("taskfile", 1);
+    po::positional_options_description pos;
+    pos.add("command", 1);
+    pos.add("subargs", -1);
 
     po::variables_map vm;
 
+    po::parsed_options parsed = po::command_line_parser(argc, argv).
+            options(desc).
+            positional(pos).
+            allow_unregistered().
+            run();
+
     try {
-        po::store(po::command_line_parser(argc, argv)
-                    .options(desc)
-                    .positional(p).run(), vm);
+        po::store(parsed, vm);
 
-        if (vm.count("help") or argc == 1) {
-            cout << "Usage: " << argv[0] << " [options] taskfile" << "\n";
+        if (vm.count("help") and !vm.count("command")) {
+            print_global_help(options);
+            return 1;
+        }
 
-            cout << "Arguments:" << "\n";
-            cout << "  taskfile         file containing tasks to launch" << "\n";
-
-            cout << options;
+        if (vm.count("version")) {
+            cout << version << "\n";
             return 1;
         }
 
@@ -56,63 +80,20 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (vm.count("taskfile")) {
-        taskfile = vm["taskfile"].as<string>();
-    }
-
-    mpi::environment env;
-    mpi::communicator world;
-
-    // Read tasks
-    std::ifstream in(taskfile.c_str());
-    if (!in) {
-        cerr << "Cannot open " << taskfile << "\n";
+    string cmd = vm["command"].as<string>();
+    if (cmd == "launch") {
+        string taskfile = launch::parse_launch_options(argc-1, &argv[1]);
+        launch::run_cmd(taskfile);
+    } else if (cmd == "filter") {
+        // TODO:
+        //parse_filter_options();
+        //filter();
+        cout << "filter command not implemented" << "\n";
+        return 1;
+    } else {
+        print_global_help(options);
         return 1;
     }
-
-    vector<string> tasks;
-
-    std::string line;
-    while (std::getline(in, line)) {
-        if (line.size() > 0)
-            tasks.push_back(line);
-    }
-
-    in.close();
-
-    // Generate world.size() chunks of tasks
-    vector<vector<string>> chunks(world.size(), vector<string>(0));
-    for (int i = 0; i < tasks.size(); ++i) {
-        chunks.at(i % world.size()).push_back(tasks[i]);
-    }
-
-    vector<string> received_tasks;
-    mpi::scatter(world, chunks, received_tasks, 0);
-
-    // Run tasks : launch command
-    for (auto &task : received_tasks) {
-        mpi::timer timer;
-        int status = system(task.c_str());
-        int elapsed_time = timer.elapsed();
-
-        if (WIFEXITED(status)) {
-            status = WEXITSTATUS(status);
-            cout << "#executed by process " << world.rank()
-                 << " in " << elapsed_time << " s"
-                 << " with status " << status
-                 << " : " << task << "\n";
-        } else {
-            if (WIFSIGNALED(status)) {
-                status = WTERMSIG(status);
-                cout << "#executed by process " << world.rank()
-                     << " in " << elapsed_time << " s"
-                     << " killed by signal " << status
-                     << " : " << task << "\n";
-            }
-        }
-    }
-
-    // TODO : filter command
 
     return 0;
 }
