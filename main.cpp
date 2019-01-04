@@ -1,11 +1,7 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
 
-#include <boost/mpi.hpp>
-#include <boost/mpi/timer.hpp>
-#include <boost/serialization/vector.hpp>
 #include <boost/program_options.hpp>
 
 #include "launch.h"
@@ -13,7 +9,6 @@
 
 using namespace std;
 
-namespace mpi = boost::mpi;
 namespace po = boost::program_options;
 
 
