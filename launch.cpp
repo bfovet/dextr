@@ -120,17 +120,19 @@ launch::exec_task(std::string task, int rank)
 
     if (WIFEXITED(status)) {
         status = WEXITSTATUS(status);
-        cout << "#executed by process " << rank
-             << " in " << elapsed_time << " s"
-             << " with status " << status
-             << " : " << task << "\n";
+        cout << "# [dextr]"
+            << " executed by process " << rank
+            << " in " << elapsed_time << " s"
+            << " with status " << status
+            << ": " << task << "\n";
     } else {
         if (WIFSIGNALED(status)) {
             status = WTERMSIG(status);
-            cout << "#executed by process " << rank
-                 << " in " << elapsed_time << " s"
-                 << " killed by signal " << status
-                 << " : " << task << "\n";
+            cout << "# [dextr]"
+                << " executed by process " << rank
+                << " in " << elapsed_time << " s"
+                << " killed by signal " << status
+                << ": " << task << "\n";
         }
     }
 }
@@ -158,7 +160,9 @@ launch::run_cmd(std::string taskfile)
 
     for (auto &task : received_tasks) {
         if (interrupt_exec) {
-            cout << "#signal received: execution interrupted" << "\n";
+            cout << "# [dextr]"
+                << " signal received by process " << world.rank()
+                << ": execution interrupted" << "\n";
             return;
         } else {
             exec_task(task, world.rank());
