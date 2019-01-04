@@ -1,5 +1,5 @@
-#ifndef DEXTR_VERSION_H
-#define DEXTR_VERSION_H
+#ifndef DEXTR_LAUNCH_H
+#define DEXTR_LAUNCH_H
 
 
 namespace launch {
@@ -9,4 +9,4 @@ namespace launch {
     void run_cmd(std::string);
 }
 
-#endif //DEXTR_VERSION_H
+#endif //DEXTR_LAUNCH_H
