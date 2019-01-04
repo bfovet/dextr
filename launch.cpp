@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <csignal>
 
 #include <boost/mpi.hpp>
 #include <boost/mpi/timer.hpp>
@@ -14,6 +15,29 @@ using namespace std;
 
 namespace mpi = boost::mpi;
 namespace po = boost::program_options;
+
+
+static volatile sig_atomic_t interrupt_exec = 0;
+
+
+static void
+interrupt(int signum)
+{
+    if (signum == SIGUSR1) {
+        interrupt_exec = 1;
+    }
+}
+
+
+static void
+catch_signals()
+{
+    struct sigaction action;
+    action.sa_handler = interrupt;
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+    sigaction(SIGUSR1, &action, NULL);
+}
 
 
 std::string
@@ -115,6 +139,8 @@ launch::exec_task(std::string task, int rank)
 void
 launch::run_cmd(std::string taskfile)
 {
+    catch_signals();
+
     mpi::environment env;
     mpi::communicator world;
 
@@ -131,6 +157,11 @@ launch::run_cmd(std::string taskfile)
     mpi::scatter(world, chunks, received_tasks, 0);
 
     for (auto &task : received_tasks) {
-        exec_task(task, world.rank());
+        if (interrupt_exec) {
+            cout << "#signal received: execution interrupted" << "\n";
+            return;
+        } else {
+            exec_task(task, world.rank());
+        }
     }
 }

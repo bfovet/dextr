@@ -2,7 +2,7 @@
 
 This is ```dextr```, a Distributed computing EXecuToR for pleasingly parallel workloads
 
-## How to use it
+## Launch tasks
 
 ```
 Usage: 
@@ -22,6 +22,12 @@ Run ```dextr``` with ```mpirun```:
     $ mpirun -n N dextr launch tasks.list > tasks.log
 
 Tasks are scattered accross processors so all of them are workers.
+
+Use the ```SIGUSR1``` signal to gracefully interrupt the execution.
+
+## Filter logs
+
+TODO
 
 ## Compilation
 
