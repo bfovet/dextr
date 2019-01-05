@@ -116,13 +116,13 @@ launch::exec_task(std::string task, int rank)
 {
     mpi::timer timer;
     int status = system(task.c_str());
-    int elapsed_time = timer.elapsed();
+    double elapsed_time = timer.elapsed();
 
     if (WIFEXITED(status)) {
         status = WEXITSTATUS(status);
         cout << "# [dextr]"
             << " executed by process " << rank
-            << " in " << elapsed_time << " s"
+            << " in " << elapsed_time << "s"
             << " with status " << status
             << ": " << task << "\n";
     } else {
@@ -130,7 +130,7 @@ launch::exec_task(std::string task, int rank)
             status = WTERMSIG(status);
             cout << "# [dextr]"
                 << " executed by process " << rank
-                << " in " << elapsed_time << " s"
+                << " in " << elapsed_time << "s"
                 << " killed by signal " << status
                 << ": " << task << "\n";
         }
